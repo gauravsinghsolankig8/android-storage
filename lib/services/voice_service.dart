@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:path_provider/path_provider.dart';
@@ -199,99 +198,6 @@ class VoiceService {
     }
   }
 
-  // Play background audio
-  Future<void> playBackgroundAudio({
-    required String audioPath,
-    bool loop = true,
-    double volume = 0.3,
-  }) async {
-    try {
-      await _audioPlayer.setVolume(volume);
-      await _audioPlayer.setReleaseMode(loop ? ReleaseMode.loop : ReleaseMode.release);
-      await _audioPlayer.play(AssetSource(audioPath));
-    } catch (e) {
-      print('Error playing background audio: $e');
-    }
-  }
-
-  // Stop background audio
-  Future<void> stopBackgroundAudio() async {
-    try {
-      await _audioPlayer.stop();
-    } catch (e) {
-      print('Error stopping background audio: $e');
-    }
-  }
-
-  // Record audio message
-  Future<String?> recordAudioMessage({
-    required Duration maxDuration,
-    String? outputPath,
-  }) async {
-    try {
-      // Implementation would use audio recording plugin
-      // For now, return a placeholder path
-      final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filePath = outputPath ?? '${directory.path}/voice_message_$timestamp.wav';
-      
-      // TODO: Implement actual audio recording
-      // This would integrate with a recording plugin like record or audio_waveforms
-      
-      return filePath;
-    } catch (e) {
-      print('Error recording audio: $e');
-      return null;
-    }
-  }
-
-  // Get available voices
-  Future<List<Map<String, String>>> getAvailableVoices() async {
-    try {
-      if (!_ttsInitialized) return [];
-      
-      final voices = await _flutterTts.getVoices;
-      return List<Map<String, String>>.from(voices ?? []);
-    } catch (e) {
-      print('Error getting available voices: $e');
-      return [];
-    }
-  }
-
-  // Set voice by name
-  Future<void> setVoice(String voiceName) async {
-    try {
-      if (!_ttsInitialized) return;
-      await _flutterTts.setVoice({
-        'name': voiceName,
-        'locale': AppConfig.voiceLanguage,
-      });
-    } catch (e) {
-      print('Error setting voice: $e');
-    }
-  }
-
-  // Check if speech recognition is available
-  Future<bool> isSpeechRecognitionAvailable() async {
-    try {
-      return await _speechToText.hasPermission;
-    } catch (e) {
-      print('Error checking speech recognition availability: $e');
-      return false;
-    }
-  }
-
-  // Get supported locales for speech recognition
-  Future<List<LocaleName>> getSupportedLocales() async {
-    try {
-      if (!_speechInitialized) return [];
-      return await _speechToText.locales();
-    } catch (e) {
-      print('Error getting supported locales: $e');
-      return [];
-    }
-  }
-
   // Apply mood-specific voice settings
   Future<void> _applyMoodVoiceSettings(MoodModel? mood) async {
     if (mood == null) return;
@@ -329,8 +235,8 @@ class VoiceService {
 
   // Clean text for better speech synthesis
   String _cleanTextForSpeech(String text) {
-    // Remove excessive emojis and special characters
-    String cleaned = text.replaceAll(RegExp(r'[😀-🿿]'), '');
+    // Basic text cleaning for speech
+    String cleaned = text;
     
     // Replace common symbols with words
     cleaned = cleaned.replaceAll('&', 'and');

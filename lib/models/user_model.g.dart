@@ -1,0 +1,214 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'user_model.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
+class UserModelAdapter extends TypeAdapter<UserModel> {
+  @override
+  final int typeId = 0;
+
+  @override
+  UserModel read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return UserModel(
+      id: fields[0] as String,
+      name: fields[1] as String?,
+      email: fields[2] as String?,
+      avatarUrl: fields[3] as String?,
+      coins: fields[4] as int,
+      isPro: fields[5] as bool,
+      proExpiryDate: fields[6] as DateTime?,
+      currentMood: fields[7] as String,
+      currentOutfit: fields[8] as String,
+      unlockedMoods: (fields[9] as List).cast<String>(),
+      unlockedOutfits: (fields[10] as List).cast<String>(),
+      preferences: fields[11] as UserPreferences,
+      stats: fields[12] as UserStats,
+      createdAt: fields[13] as DateTime,
+      lastLogin: fields[14] as DateTime,
+      personalityType: fields[15] as String,
+      memories: (fields[16] as List).cast<String>(),
+      dailyInteractionCount: fields[17] as int,
+      lastDailyLogin: fields[18] as DateTime?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, UserModel obj) {
+    writer
+      ..writeByte(19)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.email)
+      ..writeByte(3)
+      ..write(obj.avatarUrl)
+      ..writeByte(4)
+      ..write(obj.coins)
+      ..writeByte(5)
+      ..write(obj.isPro)
+      ..writeByte(6)
+      ..write(obj.proExpiryDate)
+      ..writeByte(7)
+      ..write(obj.currentMood)
+      ..writeByte(8)
+      ..write(obj.currentOutfit)
+      ..writeByte(9)
+      ..write(obj.unlockedMoods)
+      ..writeByte(10)
+      ..write(obj.unlockedOutfits)
+      ..writeByte(11)
+      ..write(obj.preferences)
+      ..writeByte(12)
+      ..write(obj.stats)
+      ..writeByte(13)
+      ..write(obj.createdAt)
+      ..writeByte(14)
+      ..write(obj.lastLogin)
+      ..writeByte(15)
+      ..write(obj.personalityType)
+      ..writeByte(16)
+      ..write(obj.memories)
+      ..writeByte(17)
+      ..write(obj.dailyInteractionCount)
+      ..writeByte(18)
+      ..write(obj.lastDailyLogin);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserModelAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class UserPreferencesAdapter extends TypeAdapter<UserPreferences> {
+  @override
+  final int typeId = 1;
+
+  @override
+  UserPreferences read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return UserPreferences(
+      isDarkMode: fields[0] as bool,
+      voiceEnabled: fields[1] as bool,
+      notificationsEnabled: fields[2] as bool,
+      voiceVolume: fields[3] as double,
+      voiceLanguage: fields[4] as String,
+      autoMoodDetection: fields[5] as bool,
+      backgroundAudio: fields[6] as bool,
+      hapticFeedback: fields[7] as bool,
+      arScale: fields[8] as double,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, UserPreferences obj) {
+    writer
+      ..writeByte(9)
+      ..writeByte(0)
+      ..write(obj.isDarkMode)
+      ..writeByte(1)
+      ..write(obj.voiceEnabled)
+      ..writeByte(2)
+      ..write(obj.notificationsEnabled)
+      ..writeByte(3)
+      ..write(obj.voiceVolume)
+      ..writeByte(4)
+      ..write(obj.voiceLanguage)
+      ..writeByte(5)
+      ..write(obj.autoMoodDetection)
+      ..writeByte(6)
+      ..write(obj.backgroundAudio)
+      ..writeByte(7)
+      ..write(obj.hapticFeedback)
+      ..writeByte(8)
+      ..write(obj.arScale);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserPreferencesAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class UserStatsAdapter extends TypeAdapter<UserStats> {
+  @override
+  final int typeId = 2;
+
+  @override
+  UserStats read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return UserStats(
+      totalInteractions: fields[0] as int,
+      totalDays: fields[1] as int,
+      longestStreak: fields[2] as int,
+      currentStreak: fields[3] as int,
+      totalCoinsEarned: fields[4] as int,
+      totalCoinsSpent: fields[5] as int,
+      pranksUsed: fields[6] as int,
+      quizzesCompleted: fields[7] as int,
+      totalTalkTime: fields[8] as Duration,
+      moodUsage: (fields[9] as Map).cast<String, int>(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, UserStats obj) {
+    writer
+      ..writeByte(10)
+      ..writeByte(0)
+      ..write(obj.totalInteractions)
+      ..writeByte(1)
+      ..write(obj.totalDays)
+      ..writeByte(2)
+      ..write(obj.longestStreak)
+      ..writeByte(3)
+      ..write(obj.currentStreak)
+      ..writeByte(4)
+      ..write(obj.totalCoinsEarned)
+      ..writeByte(5)
+      ..write(obj.totalCoinsSpent)
+      ..writeByte(6)
+      ..write(obj.pranksUsed)
+      ..writeByte(7)
+      ..write(obj.quizzesCompleted)
+      ..writeByte(8)
+      ..write(obj.totalTalkTime)
+      ..writeByte(9)
+      ..write(obj.moodUsage);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserStatsAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
