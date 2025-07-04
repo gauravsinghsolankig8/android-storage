@@ -268,10 +268,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       child: Column(
         children: [
-          ListTile(
-            title: const Text('App Version'),
-            subtitle: const Text('1.0.0+1'),
-            leading: const Icon(Icons.info),
+          GestureDetector(
+            onTap: _onVersionTap,
+            child: ListTile(
+              title: const Text('App Version'),
+              subtitle: const Text('1.0.0+1'),
+              leading: const Icon(Icons.info),
+            ),
           ),
           ListTile(
             title: const Text('Privacy Policy'),
@@ -297,6 +300,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // Open help
             },
           ),
+          
+          // Hidden Admin Access (appears after version taps)
+          if (_showAdminAccess)
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Colors.deepPurple, Colors.purple],
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ListTile(
+                title: const Text(
+                  'Admin Panel',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Administrative access',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                leading: const Icon(
+                  Icons.admin_panel_settings,
+                  color: Colors.white,
+                ),
+                trailing: const Icon(
+                  Icons.security,
+                  color: Colors.white,
+                ),
+                onTap: _showAdminLogin,
+              ),
+            ),
         ],
       ),
     );
@@ -464,6 +501,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Add these properties to the state class
+  int _versionTapCount = 0;
+  bool _showAdminAccess = false;
+
+  void _onVersionTap() {
+    setState(() {
+      _versionTapCount++;
+      if (_versionTapCount >= 7) {
+        _showAdminAccess = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Admin access unlocked!'),
+            backgroundColor: Colors.deepPurple,
+          ),
+        );
+      }
+    });
+
+    // Reset counter after 3 seconds of no taps
+    Future.delayed(const Duration(seconds: 3), () {
+      if (_versionTapCount < 7) {
+        setState(() {
+          _versionTapCount = 0;
+        });
+      }
+    });
+  }
+
+  void _showAdminLogin() {
+    final TextEditingController passwordController = TextEditingController();
+    
+    Get.dialog(
+      AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.admin_panel_settings, color: Colors.deepPurple),
+            SizedBox(width: 8),
+            Text('Admin Login'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter admin password to continue:'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Demo: Use "admin123" as password',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final password = passwordController.text;
+              if (password == 'admin123') {
+                Get.back();
+                Get.toNamed('/admin');
+              } else {
+                Get.snackbar(
+                  'Access Denied',
+                  'Invalid admin password',
+                  snackPosition: SnackPosition.TOP,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Login'),
           ),
         ],
       ),
