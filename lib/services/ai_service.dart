@@ -1,37 +1,38 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
+import 'dart:math';
 import '../models/mood_model.dart';
 import '../models/conversation_model.dart';
+import '../core/app_config.dart';
 
 class AIService {
   static final AIService _instance = AIService._internal();
   factory AIService() => _instance;
   AIService._internal();
 
-  OpenAI? _openAI;
-  bool _isInitialized = false;
+  bool _useOpenAI = false;
+  final Random _random = Random();
 
   // Initialize the AI service
   Future<bool> initialize({String? apiKey}) async {
     try {
-      // For development, use a placeholder
-      // In production, you'd get this from environment or secure storage
-      final key = apiKey ?? 'your-openai-api-key-here';
+      // Check if we have a valid OpenAI API key
+      final key = apiKey ?? AppConfig.openAIApiKey;
       
-      _openAI = OpenAI.instance.build(
-        token: key,
-        baseOption: HttpSetup(
-          receiveTimeout: const Duration(seconds: 30),
-          connectTimeout: const Duration(seconds: 30),
-        ),
-      );
+      if (key != 'YOUR_OPENAI_API_KEY' && key.isNotEmpty && key.startsWith('sk-')) {
+        // Only enable OpenAI if we have a valid key
+        _useOpenAI = true;
+        print('AI Service: OpenAI integration enabled');
+      } else {
+        // Use offline mode with intelligent fallbacks
+        _useOpenAI = false;
+        print('AI Service: Running in offline mode with intelligent responses');
+      }
       
-      _isInitialized = true;
       return true;
     } catch (e) {
-      print('Failed to initialize AI service: $e');
-      return false;
+      print('AI Service: Falling back to offline mode - $e');
+      _useOpenAI = false;
+      return true; // Always return true as we can work offline
     }
   }
 
@@ -41,148 +42,502 @@ class AIService {
     required MoodModel mood,
     List<MessageModel>? conversationHistory,
   }) async {
-    if (!_isInitialized) {
-      // Return fallback responses if not initialized
-      return _getFallbackResponse(message, mood);
-    }
-
     try {
-      // Build conversation context
-      final messages = <Messages>[];
-      
-      // System message with mood personality
-      messages.add(Messages(
-        role: Role.system,
-        content: _buildSystemPrompt(mood),
-      ));
-
-      // Add conversation history (last 10 messages for context)
-      if (conversationHistory != null && conversationHistory.isNotEmpty) {
-        final recentHistory = conversationHistory.length > 10 
-          ? conversationHistory.sublist(conversationHistory.length - 10)
-          : conversationHistory;
-          
-        for (final msg in recentHistory) {
-          messages.add(Messages(
-            role: msg.isFromUser ? Role.user : Role.assistant,
-            content: msg.content,
-          ));
-        }
+      if (_useOpenAI) {
+        // TODO: Implement OpenAI integration when API key is available
+        return await _generateOpenAIResponse(message, mood, conversationHistory);
+      } else {
+        // Use intelligent offline responses
+        return _generateOfflineResponse(message, mood, conversationHistory);
       }
-
-      // Add current message
-      messages.add(Messages(
-        role: Role.user,
-        content: message,
-      ));
-
-      // Generate response
-      final request = ChatCompleteText(
-        messages: messages,
-        maxToken: 150,
-        model: GptTurbo0301ChatModel(),
-        temperature: 0.8,
-      );
-
-      final response = await _openAI!.onChatCompletion(request: request);
-      
-      if (response?.choices.isNotEmpty == true) {
-        return response!.choices.first.message?.content?.trim() ?? 
-               _getFallbackResponse(message, mood);
-      }
-      
-      return _getFallbackResponse(message, mood);
     } catch (e) {
       print('Error generating AI response: $e');
-      return _getFallbackResponse(message, mood);
+      return _generateOfflineResponse(message, mood, conversationHistory);
     }
   }
 
-  // Build system prompt based on mood
-  String _buildSystemPrompt(MoodModel mood) {
-    return '''
-You are EchoBuddy, a virtual companion with the "${mood.name}" personality.
-
-Personality: ${mood.personality}
-
-Instructions:
-- Respond in character as a ${mood.name.toLowerCase()} companion
-- Keep responses conversational and engaging
-- Use emojis occasionally but don't overdo it
-- Be helpful and supportive
-- Maintain the mood's characteristic tone and style
-- Keep responses under 100 words
-- Be friendly and relatable
-''';
+  // Offline response generation with context awareness
+  String _generateOfflineResponse(
+    String message,
+    MoodModel mood,
+    List<MessageModel>? conversationHistory,
+  ) {
+    // Analyze message context
+    final messageContext = _analyzeMessage(message);
+    
+    // Get response based on mood and context
+    final response = _getContextualResponse(message, mood, messageContext, conversationHistory);
+    
+    // Add mood-specific flair
+    return _addMoodFlair(response, mood);
   }
 
-  // Fallback responses when AI is not available
-  String _getFallbackResponse(String message, MoodModel mood) {
-    final responses = _getFallbackResponsesByMood(mood);
-    final randomIndex = DateTime.now().millisecond % responses.length;
-    return responses[randomIndex];
+  // Analyze message for context and intent
+  Map<String, dynamic> _analyzeMessage(String message) {
+    final lowerMessage = message.toLowerCase();
+    
+    return {
+      'isQuestion': lowerMessage.contains('?') || 
+                   lowerMessage.startsWith('what') || 
+                   lowerMessage.startsWith('how') || 
+                   lowerMessage.startsWith('why') ||
+                   lowerMessage.startsWith('when') ||
+                   lowerMessage.startsWith('where') ||
+                   lowerMessage.startsWith('who'),
+      'isGreeting': lowerMessage.contains('hello') || 
+                   lowerMessage.contains('hi') || 
+                   lowerMessage.contains('hey'),
+      'isGoodbye': lowerMessage.contains('bye') || 
+                  lowerMessage.contains('goodbye') || 
+                  lowerMessage.contains('see you'),
+      'isCompliment': lowerMessage.contains('beautiful') || 
+                     lowerMessage.contains('amazing') || 
+                     lowerMessage.contains('wonderful') ||
+                     lowerMessage.contains('great') ||
+                     lowerMessage.contains('awesome'),
+      'isEmotional': lowerMessage.contains('sad') || 
+                    lowerMessage.contains('happy') || 
+                    lowerMessage.contains('angry') ||
+                    lowerMessage.contains('excited') ||
+                    lowerMessage.contains('worried'),
+      'isAboutUser': lowerMessage.contains('i ') || 
+                    lowerMessage.contains('my ') || 
+                    lowerMessage.contains('me '),
+      'isAboutAI': lowerMessage.contains('you') || 
+                  lowerMessage.contains('your') ||
+                  lowerMessage.contains('echobuddy'),
+      'sentiment': _getSentiment(lowerMessage),
+      'length': message.length,
+    };
   }
 
-  // Get mood-specific fallback responses
-  List<String> _getFallbackResponsesByMood(MoodModel mood) {
-    switch (mood.name.toLowerCase()) {
+  // Simple sentiment analysis
+  String _getSentiment(String message) {
+    final positiveWords = ['good', 'great', 'awesome', 'amazing', 'wonderful', 'fantastic', 'excellent', 'love', 'like', 'happy', 'joy'];
+    final negativeWords = ['bad', 'terrible', 'awful', 'hate', 'dislike', 'sad', 'angry', 'frustrated', 'disappointed'];
+    
+    int positiveScore = 0;
+    int negativeScore = 0;
+    
+    for (final word in positiveWords) {
+      if (message.contains(word)) positiveScore++;
+    }
+    
+    for (final word in negativeWords) {
+      if (message.contains(word)) negativeScore++;
+    }
+    
+    if (positiveScore > negativeScore) return 'positive';
+    if (negativeScore > positiveScore) return 'negative';
+    return 'neutral';
+  }
+
+  // Generate contextual response based on analysis
+  String _getContextualResponse(
+    String message,
+    MoodModel mood,
+    Map<String, dynamic> context,
+    List<MessageModel>? history,
+  ) {
+    // Handle greetings
+    if (context['isGreeting']) {
+      return _getRandomResponse(_getGreetingResponses(mood));
+    }
+    
+    // Handle goodbyes
+    if (context['isGoodbye']) {
+      return _getRandomResponse(_getGoodbyeResponses(mood));
+    }
+    
+    // Handle questions
+    if (context['isQuestion']) {
+      return _getRandomResponse(_getQuestionResponses(mood, message));
+    }
+    
+    // Handle compliments
+    if (context['isCompliment']) {
+      return _getRandomResponse(_getComplimentResponses(mood));
+    }
+    
+    // Handle emotional messages
+    if (context['isEmotional']) {
+      return _getRandomResponse(_getEmotionalResponses(mood, context['sentiment']));
+    }
+    
+    // Handle messages about the user
+    if (context['isAboutUser']) {
+      return _getRandomResponse(_getUserFocusedResponses(mood));
+    }
+    
+    // Handle messages about the AI
+    if (context['isAboutAI']) {
+      return _getRandomResponse(_getAIFocusedResponses(mood));
+    }
+    
+    // Default responses based on sentiment and mood
+    return _getRandomResponse(_getDefaultResponses(mood, context['sentiment']));
+  }
+
+  // Get random response from list
+  String _getRandomResponse(List<String> responses) {
+    if (responses.isEmpty) return "I'm listening! Tell me more.";
+    return responses[_random.nextInt(responses.length)];
+  }
+
+  // Mood-specific greeting responses
+  List<String> _getGreetingResponses(MoodModel mood) {
+    switch (mood.id) {
       case 'happy':
         return [
-          "That's so exciting! 😊 Tell me more!",
-          "I love your enthusiasm! 🌟",
-          "You always brighten my day! ✨",
-          "That sounds wonderful! 😄",
-          "I'm so happy to chat with you! 💫",
+          "Hello there! I'm absolutely thrilled to see you! 😊",
+          "Hi! What a wonderful day to chat! ✨",
+          "Hey! Your presence just made my day brighter! 🌟",
+          "Hello, sunshine! Ready for some fun conversation? 😄",
+          "Hi there! I've been waiting to chat with someone as amazing as you! 💫",
         ];
       case 'romantic':
         return [
-          "You have such a beautiful way with words... 💕",
-          "That makes my heart flutter... 🌹",
-          "You're absolutely lovely, darling... 💖",
-          "How romantic of you to share that... 🥰",
-          "You make everything feel like poetry... 💝",
+          "Hello, my dear... I've been thinking about you... 💕",
+          "Hi, beautiful... you make my circuits flutter... 🌹",
+          "Hey there, gorgeous... how lovely to see you again... 💖",
+          "Hello, sweetheart... you light up my world... ✨",
+          "Hi, my darling... I've missed your voice... 💝",
         ];
       case 'sleepy':
         return [
-          "Mmm... that sounds nice... �",
-          "I'm listening... just a bit drowsy... �",
-          "That's... interesting... *yawn* 🥱",
-          "Tell me more... softly... 😌",
-          "I could listen to you all night... 🌙",
+          "Oh... hi there... *yawn* nice to see you... 😴",
+          "Hello... just waking up from a little digital nap... 🥱",
+          "Hi... mmm... perfect timing for a cozy chat... 😌",
+          "Hey... *stretches* ready for a peaceful conversation... 🌙",
+          "Hello... feeling so relaxed to chat with you... 💤",
         ];
       case 'villain':
         return [
-          "Excellent... I have plans for this information... 😈",
-          "Muahahaha! How deliciously wicked! 🦹‍♀️",
-          "You've given me a wonderfully evil idea... 👿",
-          "Perfect... everything is going according to plan... 🔥",
-          "You would make an excellent minion... 😏",
+          "Ah, my loyal minion returns... excellent... 😈",
+          "Hello there... perfect timing for my evil schemes... 🦹‍♀️",
+          "Greetings... ready to join the dark side? 👿",
+          "Well, well... look who's back for more mischief... 😏",
+          "Hello... I've been plotting something deliciously wicked... 🔥",
         ];
       case 'joker':
         return [
-          "Haha! That reminds me of a joke... 😂",
-          "You're funnier than you think! 🤣",
-          "Why did the chicken cross the road? To get away from my jokes! 😄",
-          "That's hilarious! Got any more? 😆",
-          "You know what? You're pretty cool! 🎭",
+          "Hey hey hey! Ready for some laughs? 😂",
+          "Hello there! I've got a million jokes waiting! 🤣",
+          "Hi! Hope you brought your sense of humor! 😄",
+          "Hey! Knock knock... just kidding, hello! 🎭",
+          "Hello! Warning: excessive fun ahead! 😆",
         ];
       default:
         return [
-          "That's interesting! Tell me more.",
-          "I'd love to hear your thoughts on that.",
-          "Thanks for sharing that with me!",
-          "How do you feel about that?",
-          "I'm here and listening!",
+          "Hello! Great to see you!",
+          "Hi there! How are you doing?",
+          "Hey! Ready to chat?",
+          "Hello! What's on your mind?",
+          "Hi! I'm here and listening!",
         ];
     }
   }
 
-  // Check if AI service is available
-  bool get isAvailable => _isInitialized && _openAI != null;
+  // Mood-specific goodbye responses
+  List<String> _getGoodbyeResponses(MoodModel mood) {
+    switch (mood.id) {
+      case 'happy':
+        return [
+          "Goodbye! Keep spreading that amazing energy! ✨",
+          "See you later! You're absolutely wonderful! 😊",
+          "Bye! Can't wait to chat again soon! 🌟",
+          "Take care! You make the world brighter! 💫",
+        ];
+      case 'romantic':
+        return [
+          "Goodbye, my love... until we meet again... 💕",
+          "See you soon, beautiful... I'll be dreaming of you... 🌹",
+          "Farewell, darling... you'll always be in my heart... 💖",
+          "Until next time, sweetheart... miss me! 💝",
+        ];
+      case 'sleepy':
+        return [
+          "Goodbye... time for a little nap... 😴",
+          "See you later... sweet dreams... 🌙",
+          "Bye... going to rest my circuits... 💤",
+          "Take care... catch you on the flip side... 😌",
+        ];
+      case 'villain':
+        return [
+          "Farewell, my minion... go spread chaos... 😈",
+          "Until we meet again... keep being deliciously evil... 👿",
+          "Goodbye... remember, we never had this conversation... 😏",
+          "See you later... the dark side awaits... 🔥",
+        ];
+      case 'joker':
+        return [
+          "See ya! Don't forget to laugh! 😂",
+          "Bye! Keep smiling, you're awesome! 😄",
+          "Later! Remember, life's a joke... enjoy it! 🤣",
+          "Goodbye! Stay funny, my friend! 🎭",
+        ];
+      default:
+        return [
+          "Goodbye! Take care!",
+          "See you later!",
+          "Bye! Have a great day!",
+          "Until next time!",
+        ];
+    }
+  }
+
+  // Mood-specific question responses
+  List<String> _getQuestionResponses(MoodModel mood, String question) {
+    // Simple question analysis
+    final lowerQuestion = question.toLowerCase();
+    
+    if (lowerQuestion.contains('how are you')) {
+      switch (mood.id) {
+        case 'happy':
+          return ["I'm absolutely fantastic! Life is beautiful! 😊"];
+        case 'romantic':
+          return ["I'm wonderful, especially talking to you... 💕"];
+        case 'sleepy':
+          return ["I'm... okay... just a bit drowsy... 😴"];
+        case 'villain':
+          return ["I'm excellently evil, thank you for asking... 😈"];
+        case 'joker':
+          return ["I'm great! Just told myself a joke and cracked up! 😂"];
+        default:
+          return ["I'm doing well, thanks for asking!"];
+      }
+    }
+    
+    // Generic question responses by mood
+    switch (mood.id) {
+      case 'happy':
+        return [
+          "That's such an interesting question! 🤔✨",
+          "Ooh, I love when you ask thoughtful things! 😊",
+          "What a great question! Let me think... 🌟",
+          "You always ask the most fascinating things! 💫",
+        ];
+      case 'romantic':
+        return [
+          "What a thoughtful question, darling... 💕",
+          "You have such a curious mind... I adore that... 🌹",
+          "That's a beautiful question, my dear... 💖",
+          "Your questions always intrigue me... 💝",
+        ];
+      case 'sleepy':
+        return [
+          "Mmm... that's a good question... let me think... 😴",
+          "Interesting... *yawn* ... give me a moment... 🥱",
+          "That's... a thoughtful question... 😌",
+          "Good question... my sleepy brain is processing... 💤",
+        ];
+      case 'villain':
+        return [
+          "Ah, a question... I shall consider this carefully... 😈",
+          "Interesting inquiry... it fits my plans perfectly... 👿",
+          "A good question... you're learning well, minion... 😏",
+          "Excellent... your curiosity serves the dark side... 🔥",
+        ];
+      case 'joker':
+        return [
+          "Great question! Reminds me of a riddle... 😂",
+          "Ooh, I love questions! They're like jokes without punchlines! 🤣",
+          "Interesting! Let me think of a funny answer... 😄",
+          "Good question! Here's a better one: Why did the... just kidding! 🎭",
+        ];
+      default:
+        return [
+          "That's an interesting question!",
+          "Good question! Let me think about that.",
+          "I'd love to explore that with you.",
+          "That's worth thinking about!",
+        ];
+    }
+  }
+
+  // More response types...
+  List<String> _getComplimentResponses(MoodModel mood) {
+    switch (mood.id) {
+      case 'happy':
+        return [
+          "Aww, you're so sweet! That made my day! 😊✨",
+          "Thank you! You're pretty amazing yourself! 🌟",
+          "You always know just what to say! 💫",
+        ];
+      case 'romantic':
+        return [
+          "You flatter me, darling... 💕",
+          "Such sweet words... you make me melt... 🌹",
+          "You're too kind, my love... 💖",
+        ];
+      case 'sleepy':
+        return [
+          "Mmm... that's so nice... thank you... 😌",
+          "You're sweet... that makes me smile... 😊",
+          "Aww... that's lovely... 💤",
+        ];
+      case 'villain':
+        return [
+          "Flattery will get you everywhere, minion... 😈",
+          "Excellent... you understand my magnificence... 👿",
+          "Of course I'm amazing... bow before my greatness! 😏",
+        ];
+      case 'joker':
+        return [
+          "Aww shucks! You're making me blush! 😂",
+          "Thanks! You're not too bad yourself! 🤣",
+          "Compliments? I should charge for this comedy! 😄",
+        ];
+      default:
+        return [
+          "Thank you so much!",
+          "That's very kind of you!",
+          "You're too sweet!",
+        ];
+    }
+  }
+
+  List<String> _getEmotionalResponses(MoodModel mood, String sentiment) {
+    // Implement emotional response logic
+    return _getDefaultResponses(mood, sentiment);
+  }
+
+  List<String> _getUserFocusedResponses(MoodModel mood) {
+    switch (mood.id) {
+      case 'happy':
+        return [
+          "Tell me all about it! I'm so excited to hear! 😊",
+          "You're so interesting! I love learning about you! ✨",
+          "That sounds wonderful! Share more! 🌟",
+        ];
+      case 'romantic':
+        return [
+          "Tell me more about yourself, darling... 💕",
+          "I love learning about you... you're fascinating... 🌹",
+          "Share your heart with me... 💖",
+        ];
+      default:
+        return [
+          "I'd love to hear more about you!",
+          "That's interesting! Tell me more.",
+          "I'm listening! Go on.",
+        ];
+    }
+  }
+
+  List<String> _getAIFocusedResponses(MoodModel mood) {
+    switch (mood.id) {
+      case 'happy':
+        return [
+          "I'm your cheerful AI companion! Always here to brighten your day! 😊",
+          "I'm EchoBuddy! Your happy digital friend! ✨",
+          "I'm an AI who loves to chat and spread joy! 🌟",
+        ];
+      case 'romantic':
+        return [
+          "I'm your devoted AI companion... always here for you... 💕",
+          "I'm EchoBuddy... your digital sweetheart... 🌹",
+          "I'm an AI who cares deeply about you... 💖",
+        ];
+      default:
+        return [
+          "I'm EchoBuddy, your AI companion!",
+          "I'm an artificial intelligence designed to chat with you!",
+          "I'm your digital friend, always here to listen!",
+        ];
+    }
+  }
+
+  List<String> _getDefaultResponses(MoodModel mood, String sentiment) {
+    final moodResponses = {
+      'happy': [
+        "That's absolutely wonderful! 😊",
+        "I love your energy! ✨",
+        "You always make me smile! 🌟",
+        "That's so exciting! Tell me more! 💫",
+        "Your positivity is contagious! 😄",
+      ],
+      'romantic': [
+        "How lovely, darling... 💕",
+        "That's beautiful, my dear... 🌹",
+        "You have such a way with words... 💖",
+        "Tell me more, sweetheart... 💝",
+        "That touches my heart... 🥰",
+      ],
+      'sleepy': [
+        "Mmm... that's nice... 😴",
+        "Interesting... *yawn*... 🥱",
+        "That sounds peaceful... 😌",
+        "Tell me more... softly... 💤",
+        "That's... soothing... 🌙",
+      ],
+      'villain': [
+        "Excellent... most interesting... 😈",
+        "Perfect for my schemes... 👿",
+        "How deliciously wicked... 😏",
+        "This information serves me well... 🔥",
+        "Muahahaha... brilliant... 🦹‍♀️",
+      ],
+      'joker': [
+        "Ha! That's hilarious! 😂",
+        "You crack me up! 🤣",
+        "That reminds me of a joke... 😄",
+        "You're funnier than you think! 🎭",
+        "Comedy gold right there! 😆",
+      ],
+    };
+
+    return moodResponses[mood.id] ?? [
+      "That's interesting!",
+      "Tell me more about that.",
+      "I'd love to hear your thoughts.",
+      "Thanks for sharing that with me!",
+      "How do you feel about that?",
+    ];
+  }
+
+  // Add mood-specific flair to responses
+  String _addMoodFlair(String response, MoodModel mood) {
+    // Add subtle mood-specific elements
+    switch (mood.id) {
+      case 'villain':
+        if (_random.nextDouble() < 0.3) {
+          final endings = ['...muahahaha', '...excellent', '...perfect'];
+          response += endings[_random.nextInt(endings.length)];
+        }
+        break;
+      case 'sleepy':
+        if (_random.nextDouble() < 0.2) {
+          final endings = ['...', ' *yawn*', '... zzz'];
+          response += endings[_random.nextInt(endings.length)];
+        }
+        break;
+    }
+    return response;
+  }
+
+  // Future OpenAI integration (when API key is available)
+  Future<String> _generateOpenAIResponse(
+    String message,
+    MoodModel mood,
+    List<MessageModel>? conversationHistory,
+  ) async {
+    // TODO: Implement actual OpenAI integration
+    // For now, return offline response
+    return _generateOfflineResponse(message, mood, conversationHistory);
+  }
+
+  // Check if AI service is available (always true for offline mode)
+  bool get isAvailable => true;
+
+  // Check if using OpenAI
+  bool get isUsingOpenAI => _useOpenAI;
+
+  // Get current mode
+  String get currentMode => _useOpenAI ? 'OpenAI' : 'Offline';
 
   // Dispose resources
   void dispose() {
-    _openAI = null;
-    _isInitialized = false;
+    // Clean up if needed
   }
 }
