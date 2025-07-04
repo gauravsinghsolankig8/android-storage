@@ -8,7 +8,7 @@ import '../core/app_config.dart';
 import '../routes/app_routes.dart';
 import '../services/voice_service.dart';
 import '../services/ai_service.dart';
-import '../services/ar_service.dart';
+// import '../services/ar_service.dart'; // Removed AR functionality
 
 class SplashScreen extends StatefulWidget {
   @override

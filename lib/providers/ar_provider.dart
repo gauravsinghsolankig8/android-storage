@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import '../services/ar_service.dart';
 
+// Stub AR Provider - AR functionality temporarily disabled for compatibility
 class ARProvider extends ChangeNotifier {
-  final ARService _arService = ARService();
-  
   bool _isARActive = false;
-  bool _isARSupported = false;
+  bool _isARSupported = false; // Set to false since AR is disabled
   bool _isInitialized = false;
-  String? _error;
+  String? _error = 'AR functionality temporarily disabled for compatibility';
   double _companionScale = 1.0;
   Map<String, dynamic> _arSettings = {};
 
@@ -19,12 +17,12 @@ class ARProvider extends ChangeNotifier {
   double get companionScale => _companionScale;
   Map<String, dynamic> get arSettings => _arSettings;
 
-  // Initialize AR
+  // Initialize AR (stub)
   Future<void> initialize() async {
     try {
-      _isARSupported = await _arService.isARSupported();
+      _isARSupported = false; // AR disabled
       _isInitialized = true;
-      _error = null;
+      _error = 'AR functionality temporarily disabled for build compatibility';
       notifyListeners();
     } catch (e) {
       _error = e.toString();
@@ -33,36 +31,17 @@ class ARProvider extends ChangeNotifier {
     }
   }
 
-  // Start AR session
+  // Start AR session (stub)
   Future<void> startAR() async {
-    if (!_isARSupported) {
-      _error = 'AR is not supported on this device';
-      notifyListeners();
-      return;
-    }
-
-    try {
-      await _arService.startARSession();
-      _isARActive = true;
-      _error = null;
-      notifyListeners();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-    }
+    _error = 'AR functionality is temporarily disabled';
+    notifyListeners();
   }
 
-  // Stop AR session
+  // Stop AR session (stub)
   Future<void> stopAR() async {
-    try {
-      await _arService.stopARSession();
-      _isARActive = false;
-      _error = null;
-      notifyListeners();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-    }
+    _isARActive = false;
+    _error = null;
+    notifyListeners();
   }
 
   // Update companion scale
@@ -71,31 +50,14 @@ class ARProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Place companion in AR
+  // Place companion in AR (stub)
   Future<void> placeCompanion({
     required String modelPath,
     required List<double> position,
     required List<double> rotation,
   }) async {
-    if (!_isARActive) {
-      _error = 'AR session is not active';
-      notifyListeners();
-      return;
-    }
-
-    try {
-      await _arService.placeModel(
-        modelPath: modelPath,
-        position: position,
-        rotation: rotation,
-        scale: _companionScale,
-      );
-      _error = null;
-      notifyListeners();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-    }
+    _error = 'AR functionality is temporarily disabled';
+    notifyListeners();
   }
 
   // Update AR settings
@@ -106,18 +68,11 @@ class ARProvider extends ChangeNotifier {
 
   // Reset AR
   Future<void> resetAR() async {
-    try {
-      if (_isARActive) {
-        await stopAR();
-      }
-      _companionScale = 1.0;
-      _arSettings.clear();
-      _error = null;
-      notifyListeners();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-    }
+    _isARActive = false;
+    _companionScale = 1.0;
+    _arSettings.clear();
+    _error = 'AR functionality is temporarily disabled';
+    notifyListeners();
   }
 
   // Clear error

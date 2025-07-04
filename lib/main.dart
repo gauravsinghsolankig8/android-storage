@@ -19,7 +19,7 @@ import 'providers/app_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/conversation_provider.dart';
 import 'providers/mood_provider.dart';
-import 'providers/ar_provider.dart';
+import 'providers/ar_provider.dart'; // Stub AR provider
 
 // Routes & Screens
 import 'routes/app_routes.dart';
