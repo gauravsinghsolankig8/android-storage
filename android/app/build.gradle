@@ -31,7 +31,6 @@ if (flutterVersionName == null) {
 android {
     namespace "com.echobuddy.app"
     compileSdk 35
-    ndkVersion flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
