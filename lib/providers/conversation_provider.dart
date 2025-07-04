@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/conversation_model.dart';
 import '../models/mood_model.dart';
+import '../models/user_model.dart';
 import '../services/ai_service.dart';
+import 'package:uuid/uuid.dart';
 
 class ConversationProvider extends ChangeNotifier {
   final AIService _aiService = AIService();
+  final Uuid _uuid = const Uuid();
   
   List<ConversationModel> _conversations = [];
   ConversationModel? _currentConversation;
@@ -38,13 +41,19 @@ class ConversationProvider extends ChangeNotifier {
   }) async {
     try {
       final conversation = ConversationModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: _uuid.v4(),
         userId: userId,
-        title: title ?? 'Chat with ${mood.name}',
-        mood: mood.name,
-        messages: [],
-        startTime: DateTime.now(),
-        lastMessageTime: DateTime.now(),
+        mood: mood.id,
+        outfit: 'default',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        context: ConversationContext(
+          recentTopics: [],
+          userPreferences: {},
+          activeMemories: [],
+          currentActivity: 'chat',
+          sessionData: {},
+        ),
       );
 
       _currentConversation = conversation;
@@ -57,14 +66,16 @@ class ConversationProvider extends ChangeNotifier {
     }
   }
 
-  // Send message
+  // Send message - Updated signature to match chat screen
   Future<void> sendMessage({
     required String content,
-    required String userId,
     required MoodModel mood,
+    required UserModel? user,
   }) async {
+    if (user == null) return;
+
     if (_currentConversation == null) {
-      await startNewConversation(userId: userId, mood: mood);
+      await startNewConversation(userId: user.id, mood: mood);
     }
 
     try {
@@ -73,14 +84,24 @@ class ConversationProvider extends ChangeNotifier {
 
       // Add user message
       final userMessage = MessageModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: _uuid.v4(),
         content: content,
-        isFromUser: true,
+        type: MessageType.text,
+        sender: MessageSender.user,
         timestamp: DateTime.now(),
-        mood: mood.name,
+        metadata: MessageMetadata(
+          mood: mood.id,
+          outfit: user.currentOutfit,
+        ),
       );
 
-      _currentConversation!.messages.add(userMessage);
+      final updatedMessages = List<MessageModel>.from(_currentConversation!.messages);
+      updatedMessages.add(userMessage);
+      
+      _currentConversation = _currentConversation!.copyWith(
+        messages: updatedMessages,
+        updatedAt: DateTime.now(),
+      );
       _updateConversationInList();
       notifyListeners();
 
@@ -93,16 +114,23 @@ class ConversationProvider extends ChangeNotifier {
 
       // Add AI response
       final aiMessage = MessageModel(
-        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+        id: _uuid.v4(),
         content: response,
-        isFromUser: false,
+        type: MessageType.text,
+        sender: MessageSender.ai,
         timestamp: DateTime.now(),
-        mood: mood.name,
+        metadata: MessageMetadata(
+          mood: mood.id,
+          outfit: user.currentOutfit,
+        ),
       );
 
-      _currentConversation!.messages.add(aiMessage);
+      final finalMessages = List<MessageModel>.from(_currentConversation!.messages);
+      finalMessages.add(aiMessage);
+
       _currentConversation = _currentConversation!.copyWith(
-        lastMessageTime: DateTime.now(),
+        messages: finalMessages,
+        updatedAt: DateTime.now(),
       );
       
       _updateConversationInList();
@@ -166,5 +194,11 @@ class ConversationProvider extends ChangeNotifier {
   // Save conversations to storage (placeholder)
   Future<void> saveConversations() async {
     // TODO: Implement actual storage saving
+  }
+
+  // Clear error
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
 }
