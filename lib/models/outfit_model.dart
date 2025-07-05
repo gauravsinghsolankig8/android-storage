@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 part 'outfit_model.g.dart';
@@ -60,6 +61,9 @@ class OutfitModel {
   
   @HiveField(18)
   final List<String> compatibleMoods;
+  
+  @HiveField(19)
+  final String colorHex;
 
   OutfitModel({
     required this.id,
@@ -81,7 +85,12 @@ class OutfitModel {
     this.isActive = true,
     this.unlockCondition,
     this.compatibleMoods = const [],
+    this.colorHex = '#6B73FF',
   });
+
+  Color get color => Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
+  
+  int get unlockCost => coinPrice;
 
   OutfitModel copyWith({
     String? id,
@@ -103,6 +112,7 @@ class OutfitModel {
     bool? isActive,
     String? unlockCondition,
     List<String>? compatibleMoods,
+    String? colorHex,
   }) {
     return OutfitModel(
       id: id ?? this.id,
@@ -124,6 +134,7 @@ class OutfitModel {
       isActive: isActive ?? this.isActive,
       unlockCondition: unlockCondition ?? this.unlockCondition,
       compatibleMoods: compatibleMoods ?? this.compatibleMoods,
+      colorHex: colorHex ?? this.colorHex,
     );
   }
 
@@ -148,6 +159,7 @@ class OutfitModel {
       'is_active': isActive,
       'unlock_condition': unlockCondition,
       'compatible_moods': compatibleMoods,
+      'color_hex': colorHex,
     };
   }
 
@@ -174,6 +186,7 @@ class OutfitModel {
       isActive: json['is_active'] ?? true,
       unlockCondition: json['unlock_condition'],
       compatibleMoods: List<String>.from(json['compatible_moods'] ?? []),
+      colorHex: json['color_hex'] ?? '#6B73FF',
     );
   }
 

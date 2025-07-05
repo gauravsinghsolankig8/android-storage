@@ -55,6 +55,12 @@ class MoodModel {
   
   @HiveField(16)
   final bool isActive;
+  
+  @HiveField(17)
+  final bool isUnlocked;
+  
+  @HiveField(18)
+  final String personality;
 
   MoodModel({
     required this.id,
@@ -74,9 +80,13 @@ class MoodModel {
     this.idleMessages = const [],
     required this.behavior,
     this.isActive = true,
+    this.isUnlocked = false,
+    this.personality = '',
   });
 
   Color get color => Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
+  
+  int get unlockPrice => unlockCost;
 
   MoodModel copyWith({
     String? id,
@@ -96,6 +106,8 @@ class MoodModel {
     List<String>? idleMessages,
     MoodBehavior? behavior,
     bool? isActive,
+    bool? isUnlocked,
+    String? personality,
   }) {
     return MoodModel(
       id: id ?? this.id,
@@ -115,6 +127,8 @@ class MoodModel {
       idleMessages: idleMessages ?? this.idleMessages,
       behavior: behavior ?? this.behavior,
       isActive: isActive ?? this.isActive,
+      isUnlocked: isUnlocked ?? this.isUnlocked,
+      personality: personality ?? this.personality,
     );
   }
 
@@ -137,6 +151,8 @@ class MoodModel {
       'idle_messages': idleMessages,
       'behavior': behavior.toJson(),
       'is_active': isActive,
+      'is_unlocked': isUnlocked,
+      'personality': personality,
     };
   }
 
@@ -159,6 +175,8 @@ class MoodModel {
       idleMessages: List<String>.from(json['idle_messages'] ?? []),
       behavior: MoodBehavior.fromJson(json['behavior'] ?? {}),
       isActive: json['is_active'] ?? true,
+      isUnlocked: json['is_unlocked'] ?? false,
+      personality: json['personality'] ?? '',
     );
   }
 
@@ -191,6 +209,8 @@ class MoodModel {
         movementSpeed: 1.2,
         interactionStyle: 'playful',
       ),
+      isUnlocked: true,
+      personality: 'Upbeat, optimistic, and full of joy. Always sees the bright side of things.',
     ),
     MoodModel(
       id: 'romantic',
@@ -222,6 +242,7 @@ class MoodModel {
         movementSpeed: 0.8,
         interactionStyle: 'intimate',
       ),
+      personality: 'Sweet, caring, and romantic. Speaks with warmth and affection.',
     ),
     MoodModel(
       id: 'villain',
@@ -253,6 +274,7 @@ class MoodModel {
         movementSpeed: 1.0,
         interactionStyle: 'theatrical',
       ),
+      personality: 'Dramatic, scheming, and playfully evil. Loves theatrics and grand plans.',
     ),
     MoodModel(
       id: 'sleepy',
@@ -282,6 +304,8 @@ class MoodModel {
         movementSpeed: 0.5,
         interactionStyle: 'peaceful',
       ),
+      isUnlocked: true,
+      personality: 'Relaxed, calm, and slightly tired. Speaks slowly and peacefully.',
     ),
     MoodModel(
       id: 'joker',
@@ -313,6 +337,7 @@ class MoodModel {
         movementSpeed: 1.3,
         interactionStyle: 'entertaining',
       ),
+      personality: 'Humorous, witty, and loves jokes. Always ready with a pun or prank.',
     ),
   ];
 }

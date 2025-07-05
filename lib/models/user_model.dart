@@ -60,6 +60,9 @@ class UserModel {
   
   @HiveField(18)
   final DateTime? lastDailyLogin;
+  
+  @HiveField(19)
+  final bool isProActive;
 
   UserModel({
     required this.id,
@@ -81,7 +84,8 @@ class UserModel {
     this.memories = const [],
     this.dailyInteractionCount = 0,
     this.lastDailyLogin,
-  });
+    bool? isProActive,
+  }) : isProActive = isProActive ?? (isPro && (proExpiryDate == null || DateTime.now().isBefore(proExpiryDate)));
 
   UserModel copyWith({
     String? id,
@@ -103,6 +107,7 @@ class UserModel {
     List<String>? memories,
     int? dailyInteractionCount,
     DateTime? lastDailyLogin,
+    bool? isProActive,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -124,6 +129,7 @@ class UserModel {
       memories: memories ?? this.memories,
       dailyInteractionCount: dailyInteractionCount ?? this.dailyInteractionCount,
       lastDailyLogin: lastDailyLogin ?? this.lastDailyLogin,
+      isProActive: isProActive ?? this.isProActive,
     );
   }
 
@@ -148,6 +154,7 @@ class UserModel {
       'memories': memories,
       'daily_interaction_count': dailyInteractionCount,
       'last_daily_login': lastDailyLogin?.toIso8601String(),
+      'is_pro_active': isProActive,
     };
   }
 
@@ -176,6 +183,7 @@ class UserModel {
       lastDailyLogin: json['last_daily_login'] != null
           ? DateTime.parse(json['last_daily_login'])
           : null,
+      isProActive: json['is_pro_active'] ?? false,
     );
   }
 
@@ -223,6 +231,18 @@ class UserPreferences {
   
   @HiveField(8)
   final double arScale;
+  
+  @HiveField(9)
+  final bool autoPlayVoice;
+  
+  @HiveField(10)
+  final bool voiceInputEnabled;
+  
+  @HiveField(11)
+  final bool hapticsEnabled;
+  
+  @HiveField(12)
+  final bool analyticsEnabled;
 
   UserPreferences({
     this.isDarkMode = false,
@@ -234,6 +254,10 @@ class UserPreferences {
     this.backgroundAudio = true,
     this.hapticFeedback = true,
     this.arScale = 1.0,
+    this.autoPlayVoice = true,
+    this.voiceInputEnabled = true,
+    this.hapticsEnabled = true,
+    this.analyticsEnabled = false,
   });
 
   UserPreferences copyWith({
@@ -246,6 +270,10 @@ class UserPreferences {
     bool? backgroundAudio,
     bool? hapticFeedback,
     double? arScale,
+    bool? autoPlayVoice,
+    bool? voiceInputEnabled,
+    bool? hapticsEnabled,
+    bool? analyticsEnabled,
   }) {
     return UserPreferences(
       isDarkMode: isDarkMode ?? this.isDarkMode,
@@ -257,6 +285,10 @@ class UserPreferences {
       backgroundAudio: backgroundAudio ?? this.backgroundAudio,
       hapticFeedback: hapticFeedback ?? this.hapticFeedback,
       arScale: arScale ?? this.arScale,
+      autoPlayVoice: autoPlayVoice ?? this.autoPlayVoice,
+      voiceInputEnabled: voiceInputEnabled ?? this.voiceInputEnabled,
+      hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
+      analyticsEnabled: analyticsEnabled ?? this.analyticsEnabled,
     );
   }
 
@@ -271,6 +303,10 @@ class UserPreferences {
       'background_audio': backgroundAudio,
       'haptic_feedback': hapticFeedback,
       'ar_scale': arScale,
+      'auto_play_voice': autoPlayVoice,
+      'voice_input_enabled': voiceInputEnabled,
+      'haptics_enabled': hapticsEnabled,
+      'analytics_enabled': analyticsEnabled,
     };
   }
 
@@ -285,6 +321,10 @@ class UserPreferences {
       backgroundAudio: json['background_audio'] ?? true,
       hapticFeedback: json['haptic_feedback'] ?? true,
       arScale: (json['ar_scale'] ?? 1.0).toDouble(),
+      autoPlayVoice: json['auto_play_voice'] ?? true,
+      voiceInputEnabled: json['voice_input_enabled'] ?? true,
+      hapticsEnabled: json['haptics_enabled'] ?? true,
+      analyticsEnabled: json['analytics_enabled'] ?? false,
     );
   }
 }
@@ -320,6 +360,12 @@ class UserStats {
   
   @HiveField(9)
   final Map<String, int> moodUsage;
+  
+  @HiveField(10)
+  final int totalChats;
+  
+  @HiveField(11)
+  final int totalTimeSpent;
 
   UserStats({
     this.totalInteractions = 0,
@@ -332,6 +378,8 @@ class UserStats {
     this.quizzesCompleted = 0,
     this.totalTalkTime = Duration.zero,
     this.moodUsage = const {},
+    this.totalChats = 0,
+    this.totalTimeSpent = 0,
   });
 
   UserStats copyWith({
@@ -345,6 +393,8 @@ class UserStats {
     int? quizzesCompleted,
     Duration? totalTalkTime,
     Map<String, int>? moodUsage,
+    int? totalChats,
+    int? totalTimeSpent,
   }) {
     return UserStats(
       totalInteractions: totalInteractions ?? this.totalInteractions,
@@ -357,6 +407,8 @@ class UserStats {
       quizzesCompleted: quizzesCompleted ?? this.quizzesCompleted,
       totalTalkTime: totalTalkTime ?? this.totalTalkTime,
       moodUsage: moodUsage ?? this.moodUsage,
+      totalChats: totalChats ?? this.totalChats,
+      totalTimeSpent: totalTimeSpent ?? this.totalTimeSpent,
     );
   }
 
@@ -372,6 +424,8 @@ class UserStats {
       'quizzes_completed': quizzesCompleted,
       'total_talk_time': totalTalkTime.inSeconds,
       'mood_usage': moodUsage,
+      'total_chats': totalChats,
+      'total_time_spent': totalTimeSpent,
     };
   }
 
@@ -387,6 +441,8 @@ class UserStats {
       quizzesCompleted: json['quizzes_completed'] ?? 0,
       totalTalkTime: Duration(seconds: json['total_talk_time'] ?? 0),
       moodUsage: Map<String, int>.from(json['mood_usage'] ?? {}),
+      totalChats: json['total_chats'] ?? 0,
+      totalTimeSpent: json['total_time_spent'] ?? 0,
     );
   }
 }
