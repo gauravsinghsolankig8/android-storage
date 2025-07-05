@@ -40,6 +40,11 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  // Toggle theme (alias for toggleDarkMode)
+  Future<void> toggleTheme() async {
+    await toggleDarkMode();
+  }
+
   // Set theme
   Future<void> setTheme(String theme) async {
     try {

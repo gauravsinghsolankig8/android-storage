@@ -45,6 +45,12 @@ class SecretCommandModel {
   
   @HiveField(13)
   final List<String> requiredMoods;
+  
+  @HiveField(14)
+  final bool isHidden;
+  
+  @HiveField(15)
+  final List<CommandEffect> effects;
 
   SecretCommandModel({
     required this.id,
@@ -61,7 +67,13 @@ class SecretCommandModel {
     this.isActive = true,
     required this.description,
     this.requiredMoods = const [],
-  });
+    this.isHidden = false,
+    List<CommandEffect>? effects,
+  }) : effects = effects ?? [effect];
+  
+  // Convenience getters for backward compatibility
+  String get command => triggers.isNotEmpty ? triggers.first : name;
+  String get response => responses.isNotEmpty ? responses.first : description;
 
   SecretCommandModel copyWith({
     String? id,
@@ -78,6 +90,8 @@ class SecretCommandModel {
     bool? isActive,
     String? description,
     List<String>? requiredMoods,
+    bool? isHidden,
+    List<CommandEffect>? effects,
   }) {
     return SecretCommandModel(
       id: id ?? this.id,
@@ -94,6 +108,8 @@ class SecretCommandModel {
       isActive: isActive ?? this.isActive,
       description: description ?? this.description,
       requiredMoods: requiredMoods ?? this.requiredMoods,
+      isHidden: isHidden ?? this.isHidden,
+      effects: effects ?? this.effects,
     );
   }
 
@@ -113,10 +129,13 @@ class SecretCommandModel {
       'is_active': isActive,
       'description': description,
       'required_moods': requiredMoods,
+      'is_hidden': isHidden,
+      'effects': effects.map((e) => e.toJson()).toList(),
     };
   }
 
   factory SecretCommandModel.fromJson(Map<String, dynamic> json) {
+    final effect = CommandEffect.fromJson(json['effect'] ?? {});
     return SecretCommandModel(
       id: json['id'],
       name: json['name'],
@@ -131,10 +150,14 @@ class SecretCommandModel {
       isPro: json['is_pro'] ?? false,
       coinReward: json['coin_reward'] ?? 0,
       cooldownSeconds: json['cooldown_seconds'] ?? 0,
-      effect: CommandEffect.fromJson(json['effect'] ?? {}),
+      effect: effect,
       isActive: json['is_active'] ?? true,
       description: json['description'] ?? '',
       requiredMoods: List<String>.from(json['required_moods'] ?? []),
+      isHidden: json['is_hidden'] ?? false,
+      effects: (json['effects'] as List<dynamic>?)
+        ?.map((e) => CommandEffect.fromJson(e as Map<String, dynamic>))
+        .toList() ?? [effect],
     );
   }
 
@@ -348,6 +371,14 @@ enum CommandType {
   educational,
   @HiveField(6)
   interactive,
+  @HiveField(7)
+  easter_egg,
+  @HiveField(8)
+  admin,
+  @HiveField(9)
+  debug,
+  @HiveField(10)
+  utility,
 }
 
 @HiveType(typeId: 15)

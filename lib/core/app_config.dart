@@ -46,6 +46,9 @@ class AppConfig {
   static const double defaultVolume = 0.7;
   static const String voiceLanguage = 'en-US';
   
+  // UI Configuration
+  static const double textScaleFactor = 1.0;
+  
   // Debug Configuration
   static const bool isDebugMode = true;
   static const bool enableLogging = true;

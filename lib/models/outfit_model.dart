@@ -225,6 +225,7 @@ class OutfitModel {
       modelUrl: 'assets/3d_models/default_buddy.glb',
       category: 'basic',
       rarity: 'common',
+      colorHex: '#6B73FF',
       assets: OutfitAssets(
         glbFile: 'assets/3d_models/default_buddy.glb',
         textureFiles: ['assets/3d_models/textures/default_texture.png'],
@@ -242,6 +243,7 @@ class OutfitModel {
       category: 'casual',
       coinPrice: 25,
       rarity: 'common',
+      colorHex: '#32CD32',
       tags: ['casual', 'cool', 'everyday'],
       assets: OutfitAssets(
         glbFile: 'assets/3d_models/casual_cool.glb',
@@ -260,6 +262,7 @@ class OutfitModel {
       category: 'formal',
       coinPrice: 50,
       rarity: 'uncommon',
+      colorHex: '#2F4F4F',
       tags: ['formal', 'professional', 'suit'],
       isPro: true,
       assets: OutfitAssets(
@@ -279,6 +282,7 @@ class OutfitModel {
       category: 'party',
       coinPrice: 40,
       rarity: 'rare',
+      colorHex: '#FF69B4',
       tags: ['party', 'fun', 'colorful'],
       assets: OutfitAssets(
         glbFile: 'assets/3d_models/party_outfit.glb',
@@ -298,6 +302,7 @@ class OutfitModel {
       coinPrice: 75,
       realPrice: 49.0,
       rarity: 'epic',
+      colorHex: '#8B0000',
       tags: ['villain', 'dark', 'cape'],
       isPro: true,
       assets: OutfitAssets(
@@ -317,6 +322,7 @@ class OutfitModel {
       category: 'romantic',
       coinPrice: 60,
       rarity: 'rare',
+      colorHex: '#FF1493',
       tags: ['romantic', 'elegant', 'dress'],
       isPro: true,
       assets: OutfitAssets(
@@ -336,6 +342,7 @@ class OutfitModel {
       category: 'sleepwear',
       coinPrice: 30,
       rarity: 'common',
+      colorHex: '#9370DB',
       tags: ['sleepwear', 'cozy', 'comfortable'],
       assets: OutfitAssets(
         glbFile: 'assets/3d_models/pajamas.glb',
@@ -366,6 +373,18 @@ class OutfitAssets {
   
   @HiveField(5)
   final String? roughnessMapFile;
+  
+  @HiveField(6)
+  final String? modelPath;
+  
+  @HiveField(7)
+  final List<String> texturePaths;
+  
+  @HiveField(8)
+  final List<String> animationPaths;
+  
+  @HiveField(9)
+  final String? thumbnailPath;
 
   OutfitAssets({
     required this.glbFile,
@@ -374,7 +393,13 @@ class OutfitAssets {
     this.materialMappings = const {},
     this.normalMapFile,
     this.roughnessMapFile,
-  });
+    String? modelPath,
+    List<String>? texturePaths,
+    List<String>? animationPaths,
+    this.thumbnailPath,
+  }) : modelPath = modelPath ?? glbFile,
+       texturePaths = texturePaths ?? textureFiles,
+       animationPaths = animationPaths ?? animationFiles;
 
   OutfitAssets copyWith({
     String? glbFile,
@@ -383,6 +408,10 @@ class OutfitAssets {
     Map<String, String>? materialMappings,
     String? normalMapFile,
     String? roughnessMapFile,
+    String? modelPath,
+    List<String>? texturePaths,
+    List<String>? animationPaths,
+    String? thumbnailPath,
   }) {
     return OutfitAssets(
       glbFile: glbFile ?? this.glbFile,
@@ -391,6 +420,10 @@ class OutfitAssets {
       materialMappings: materialMappings ?? this.materialMappings,
       normalMapFile: normalMapFile ?? this.normalMapFile,
       roughnessMapFile: roughnessMapFile ?? this.roughnessMapFile,
+      modelPath: modelPath ?? this.modelPath,
+      texturePaths: texturePaths ?? this.texturePaths,
+      animationPaths: animationPaths ?? this.animationPaths,
+      thumbnailPath: thumbnailPath ?? this.thumbnailPath,
     );
   }
 
@@ -402,6 +435,10 @@ class OutfitAssets {
       'material_mappings': materialMappings,
       'normal_map_file': normalMapFile,
       'roughness_map_file': roughnessMapFile,
+      'model_path': modelPath,
+      'texture_paths': texturePaths,
+      'animation_paths': animationPaths,
+      'thumbnail_path': thumbnailPath,
     };
   }
 
@@ -413,6 +450,10 @@ class OutfitAssets {
       materialMappings: Map<String, String>.from(json['material_mappings'] ?? {}),
       normalMapFile: json['normal_map_file'],
       roughnessMapFile: json['roughness_map_file'],
+      modelPath: json['model_path'],
+      texturePaths: List<String>.from(json['texture_paths'] ?? json['texture_files'] ?? []),
+      animationPaths: List<String>.from(json['animation_paths'] ?? json['animation_files'] ?? []),
+      thumbnailPath: json['thumbnail_path'],
     );
   }
 }
