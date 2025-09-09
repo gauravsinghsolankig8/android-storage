@@ -14,6 +14,7 @@ CREATE TABLE users (
     auth_provider ENUM('google', 'phone', 'email') NOT NULL,
     profile_image_url VARCHAR(500),
     is_verified BOOLEAN DEFAULT FALSE,
+    role ENUM('user', 'admin', 'super_admin') DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

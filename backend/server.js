@@ -15,6 +15,7 @@ const storeRoutes = require('./routes/store');
 const darshanRoutes = require('./routes/darshan');
 const userRoutes = require('./routes/users');
 const notificationRoutes = require('./routes/notifications');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -65,6 +66,7 @@ app.use('/api/store', storeRoutes);
 app.use('/api/darshan', darshanRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
