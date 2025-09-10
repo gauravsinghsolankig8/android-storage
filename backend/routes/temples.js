@@ -1,4 +1,5 @@
 const express = require('express');
+const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -7,40 +8,74 @@ const router = express.Router();
 // Get all temples
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
+    const { 
+      page = 1, 
+      limit = 20, 
+      search, 
+      category,
+      sort = 'name',
+      order = 'ASC'
+    } = req.query;
+    
     const offset = (page - 1) * limit;
+    const validSortFields = ['name', 'created_at', 'location'];
+    const validOrder = ['ASC', 'DESC'];
+    
+    const sortField = validSortFields.includes(sort) ? sort : 'name';
+    const sortOrder = validOrder.includes(order.toUpperCase()) ? order.toUpperCase() : 'ASC';
 
     let query = `
       SELECT t.*, 
-             (SELECT ti.image_url FROM temple_images ti WHERE ti.temple_id = t.id AND ti.is_primary = 1 LIMIT 1) as primary_image
+             (SELECT ti.image_url FROM temple_images ti WHERE ti.temple_id = t.id AND ti.is_primary = 1 LIMIT 1) as primary_image,
+             (SELECT COUNT(*) FROM favorites f WHERE f.item_id = t.id AND f.type = 'temple') as favorite_count
       FROM temples t
     `;
     let params = [];
+    let whereConditions = [];
 
     if (search) {
-      query += ' WHERE t.name LIKE ? OR t.location LIKE ?';
-      params.push(`%${search}%`, `%${search}%`);
+      whereConditions.push('(t.name LIKE ? OR t.location LIKE ? OR t.description LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    query += ' ORDER BY t.name LIMIT ? OFFSET ?';
+    if (category) {
+      whereConditions.push('t.category = ?');
+      params.push(category);
+    }
+
+    if (whereConditions.length > 0) {
+      query += ' WHERE ' + whereConditions.join(' AND ');
+    }
+
+    query += ` ORDER BY t.${sortField} ${sortOrder} LIMIT ? OFFSET ?`;
     params.push(parseInt(limit), parseInt(offset));
 
     const [temples] = await db.query(query, params);
+
+    // Parse JSON fields
+    const processedTemples = temples.map(temple => ({
+      ...temple,
+      timings: temple.timings ? JSON.parse(temple.timings) : null,
+      amenities: temple.amenities ? JSON.parse(temple.amenities) : [],
+      rituals: temple.rituals ? JSON.parse(temple.rituals) : [],
+      contact_info: temple.contact_info ? JSON.parse(temple.contact_info) : null
+    }));
 
     // Get total count
     let countQuery = 'SELECT COUNT(*) as total FROM temples t';
     let countParams = [];
     
-    if (search) {
-      countQuery += ' WHERE t.name LIKE ? OR t.location LIKE ?';
-      countParams.push(`%${search}%`, `%${search}%`);
+    if (whereConditions.length > 0) {
+      countQuery += ' WHERE ' + whereConditions.join(' AND ');
+      countParams = params.slice(0, -2); // Remove limit and offset
     }
 
     const [countResult] = await db.query(countQuery, countParams);
     const total = countResult[0].total;
 
     res.json({
-      temples,
+      success: true,
+      data: processedTemples,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -50,7 +85,10 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Get temples error:', error);
-    res.status(500).json({ error: 'Failed to fetch temples' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch temples' 
+    });
   }
 });
 
